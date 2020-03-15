@@ -31,7 +31,7 @@ def addLayer(blockNumber, squareSize, diffProb):
     # Time List for plotting
     timeList = np.arange(0, blockNumber, 1)
     # Average data over trials
-    for i in range (100):
+    for i in range (1000):
         print(i)
         # Values for sum(h) at each time
         hVals = []
@@ -112,36 +112,17 @@ def addLayer(blockNumber, squareSize, diffProb):
             hSquaredVals.append(sum(heightSquaredList))
             # Update height of release
             squareHeight = (max(heightList) + 100)
-        # Append data lists to matrices for averaging
         hValsMatrix.append(hVals)
         hSquaredValsMatrix.append(hSquaredVals)
 
+    wValsMatrix = np.zeros((blockNumber, 1000))
     wAvVals = []
-    hAvVals = []
-    hAvSquaredVals = []
+    for i in range(blockNumber):
+        for j in range(10):          
+            wValsMatrix[i][j] = (math.sqrt((hSquaredValsMatrix[j][i]/squareSize - (hValsMatrix[j][i]/squareSize)**2)))
+    for i in wValsMatrix:
+        wAvVals.append(sum(i)/len(i))
 
-    for i in (np.array(hValsMatrix)).T:
-        hAvVals.append((np.mean(i))/squareSize)
-
-    for i in (np.array(hSquaredValsMatrix)).T:
-        hAvSquaredVals.append((np.mean(i))/squareSize)
-
-    """
-    # Lists for average
-    wAvVals = []
-    hAvVals = []
-    hAvSquaredVals = []
-    # Transpose matrices and averages
-    for i in [list(e) for e in zip(*hValsMatrix)]:
-        hAvVals.append(sum(i)/((squareSize)*len(i)))
-    for i in [list(e) for e in zip(*hSquaredValsMatrix)]:
-        hAvSquaredVals.append(sum(i)/((squareSize)*len(i)))
-    # Width of KPZ surface
-    """
-    
-    for i in range(len(hAvSquaredVals)):
-        wAvVals.append(math.sqrt((hAvSquaredVals[i] - (hAvVals[i])**2)))
-    # Scatter plot of width against time
     plt.scatter(timeList, wAvVals)
     plt.title("(W(t)) against time for ballistic deposition")
     plt.xlabel("time / t")
@@ -152,7 +133,17 @@ def addLayer(blockNumber, squareSize, diffProb):
         for i in range(len(wAvVals)):
             dataFile.write('%lf, %lf\n' % (timeList[i], wAvVals[i]))
 
-addLayer(80000, 100, 0)
+    asympList = []
+    for i in range(len(wAvVals) - 100, len(wAvVals)):
+        asympList.append(wAvVals[i])
+
+    W = sum(wAvVals)/len(wAvVals)
+    WError = np.std(asympList)/math.sqrt(len(wAvVals))
+    print(W)
+    print(WError)
+        
+
+addLayer(1000, 10, 0)
         
             
         
