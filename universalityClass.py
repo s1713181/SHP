@@ -23,7 +23,7 @@ from matplotlib import colors
 import random
 import numpy as np
 
-def addLayer(blockNumber, squareSize, diffProb):
+def addLayer(blockNumber, squareSize, trialNumber):
     # Matrix to hold values of <h>
     hValsMatrix = []
     # Matrix to hold value of <h**2>
@@ -31,7 +31,7 @@ def addLayer(blockNumber, squareSize, diffProb):
     # Time List for plotting
     timeList = np.arange(0, blockNumber, 1)
     # Average data over trials
-    for i in range (1000):
+    for i in range (trialNumber):
         print(i)
         # Values for sum(h) at each time
         hVals = []
@@ -115,13 +115,14 @@ def addLayer(blockNumber, squareSize, diffProb):
         hValsMatrix.append(hVals)
         hSquaredValsMatrix.append(hSquaredVals)
 
-    wValsMatrix = np.zeros((blockNumber, 1000))
+    wValsMatrix = np.zeros((trialNumber, blockNumber))
     wAvVals = []
     for i in range(blockNumber):
-        for j in range(10):          
-            wValsMatrix[i][j] = (math.sqrt((hSquaredValsMatrix[j][i]/squareSize - (hValsMatrix[j][i]/squareSize)**2)))
-    for i in wValsMatrix:
+        for j in range(trialNumber):          
+            wValsMatrix[j][i] = (math.sqrt(((hSquaredValsMatrix[j][i])/squareSize - ((hValsMatrix[j][i])/squareSize)**2)))
+    for i in (np.array(wValsMatrix)).T:
         wAvVals.append(sum(i)/len(i))
+        
 
     plt.scatter(timeList, wAvVals)
     plt.title("(W(t)) against time for ballistic deposition")
@@ -134,16 +135,18 @@ def addLayer(blockNumber, squareSize, diffProb):
             dataFile.write('%lf, %lf\n' % (timeList[i], wAvVals[i]))
 
     asympList = []
-    for i in range(len(wAvVals) - 100, len(wAvVals)):
+    for i in range(len(wAvVals) - 250, len(wAvVals)):
         asympList.append(wAvVals[i])
 
     W = sum(wAvVals)/len(wAvVals)
     WError = np.std(asympList)/math.sqrt(len(wAvVals))
-    print(W)
-    print(WError)
+    alpha = math.log(W, squareSize)
+    alphaerror = (1/math.log(squareSize))*(WError/W)
+    print(alpha)
+    print(alphaerror)
         
 
-addLayer(1000, 10, 0)
+addLayer(500, 10, 1000)
         
             
         
