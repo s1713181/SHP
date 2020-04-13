@@ -28,7 +28,9 @@ clusterRadius: distance from seed origin to furthest particle in cluster (float)
 clusterArea: area of cluster (int)
 matrix: final matrix representation of the simulation (array)
 
-Simulation produces a snapshot of the BD-DLA process after 5000 simulation iterations. 
+Simulation produces a snapshot of the BD-DLA process every 5000 simulation iterations. 
+
+Simulation combines these images to a GIF if needGif==True
                                    
 ######################################################################################
 
