@@ -1,6 +1,6 @@
 """
-This function finds the fractal dimensionality of a cluster generated
-by the DLACluster.py script.
+This function finds the fractal dimensionality and anastomosis of a cluster generated
+by the DLACluster.py script, and produces relevant plots.
 
 Only to be used for 1 seed particle in a cluster.
 
