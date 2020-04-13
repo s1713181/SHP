@@ -125,7 +125,6 @@ def addLayer(blockNumber, squareSize, trialNumber):
         
 
     plt.scatter(timeList, wAvVals)
-    plt.title("(W(t)) against time for ballistic deposition")
     plt.xlabel("time / t")
     plt.ylabel("W(t)")
     plt.show()
@@ -135,7 +134,7 @@ def addLayer(blockNumber, squareSize, trialNumber):
             dataFile.write('%lf, %lf\n' % (timeList[i], wAvVals[i]))
 
     asympList = []
-    for i in range(len(wAvVals) - 250, len(wAvVals)):
+    for i in range(len(wAvVals) - 4, len(wAvVals)):
         asympList.append(wAvVals[i])
 
     W = sum(wAvVals)/len(wAvVals)
@@ -146,7 +145,7 @@ def addLayer(blockNumber, squareSize, trialNumber):
     print(alphaerror)
         
 
-addLayer(500, 10, 1000)
+addLayer(5000, 100, 5)
         
             
         

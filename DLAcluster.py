@@ -1,7 +1,7 @@
 """
 DLACluster.py - this is the main function for the DLA cluster model.
 
-INPUTS: DLACluster(squareSize, needGif, blockNumber, layerStep, tempProb, seedNum, alignProb)
+INPUTS: DLACluster(squareSize, needGif, blockNumber, layerStep, tempProb, seedNum, alignProb, depMod, clusterMod)
 
 squareSize: dimensions of simulation square (int)
 needGif: determines if GIF is produced (boolean)
@@ -10,6 +10,8 @@ layerStep: number of particles added to cluster in between layering (int)
 tempProb: probability of surface normal deposition at each layer (float)
 seedNum: number of seed particles in the simulation (int)
 alignProb: probability of deposition for non-aligned particles (float)
+depMod: moderating factor in surface-normal deposition (float)
+clusterMod: moderating factor in on-cluster deposition (float)
 
 OUTPUTS:
 
@@ -24,6 +26,7 @@ Aligments: 1 == north
 """
 
 import random
+import math
 import numpy
 import matplotlib.pyplot as plt
 import os
@@ -34,7 +37,7 @@ from addLayer import addLayer
 import countIslands
 
 # Main simulation script (DLA-CA Process)
-def DLAcluster(squareSize, needGif, blockNumber, layerStep, tempProb, seedNum, alignProb):
+def DLAcluster(squareSize, needGif, blockNumber, layerStep, tempProb, seedNum, alignProb, depMod, clusterMod):
 
     # Check if folder "images" exists, and if not - create it
     if not os.path.isdir("images"):
@@ -73,9 +76,9 @@ def DLAcluster(squareSize, needGif, blockNumber, layerStep, tempProb, seedNum, a
         x = int(seedX[i])
         matrix[y][x] = 1
         # Assign random crystallographic orientation to seed
-        alignMatrix[y][x] = random.choice([1, 2, 3, 4])
+        alignMatrix[y][x] = 3
 
-    cmap = colors.ListedColormap(['navy','white','red','green','orange', 'black'], N=6)
+    cmap = colors.ListedColormap(['navy','white','orange','green','black'], N=5)
 
     # Initialize the random walker counter
     randomWalkersCount = 0
@@ -96,7 +99,7 @@ def DLAcluster(squareSize, needGif, blockNumber, layerStep, tempProb, seedNum, a
     usedInterval = []
 
     # Add initial KPZ Layer to the simulation (Cavity edge)
-    KPZMatrix, existingLayers = addLayer(KPZMatrix, matrix, blockNumber, squareSize, existingLayers, tempProb)
+    KPZMatrix, existingLayers = addLayer(KPZMatrix, matrix, blockNumber, squareSize, existingLayers, tempProb, depMod, clusterMod)
     for i in range (1, squareSize - 2):
         for j in range (1, squareSize - 1):
             if matrix[i][j] != 1 and i != 0:
@@ -129,7 +132,7 @@ def DLAcluster(squareSize, needGif, blockNumber, layerStep, tempProb, seedNum, a
                                     
             # Add layer to simulation if 'layerStep' particles newly added to simulation 
             if addedCount%layerStep == 0 and addedCount != 0 and newAddedCount == True:
-                KPZMatrix, existingLayers = addLayer(KPZMatrix, matrix, blockNumber, squareSize, existingLayers, tempProb)
+                KPZMatrix, existingLayers = addLayer(KPZMatrix, matrix, blockNumber, squareSize, existingLayers, tempProb, depMod, clusterMod)
                 for i in range (1, squareSize - 2):
                     for j in range (1, squareSize - 1):
                         if matrix[i][j] != 1 and i != 0:
@@ -228,7 +231,9 @@ def DLAcluster(squareSize, needGif, blockNumber, layerStep, tempProb, seedNum, a
                                 alignMatrix[location[1]][location[0]] = cell
                                 addedCount += 1
                                 newAddedCount = True
-                    
+
+                    # Finish conditions for non-constant radius
+                    """
                     # Cluster touches top of square   
                     for i in range(squareSize - 10, squareSize):
                         for j in range (0, squareSize):
@@ -246,7 +251,14 @@ def DLAcluster(squareSize, needGif, blockNumber, layerStep, tempProb, seedNum, a
                         for j in range (0, 5):
                             if matrix[i][j] == 1:
                                 completeCluster = True
-
+                    """
+                    
+                    for i in range(squareSize):
+                        for j in range(squareSize):
+                            if matrix[i][j] == 1 and (i**2 + (j-squareSize/2)**2)**(1/2) > (squareSize/2 - 5):
+                                completeCluster = True
+                    
+                    
             # Otherwise, save the location
             else:
                 # Forbid walking through solid silica
@@ -259,10 +271,14 @@ def DLAcluster(squareSize, needGif, blockNumber, layerStep, tempProb, seedNum, a
         # Print update 
         intervalSavePic=range(2,4000000000,500)
         if randomWalkersCount in intervalSavePic:
+            """
             print("Walkers added: ", randomWalkersCount, " Walkers added to cluster: ", addedCount)
+            """
         if needGif:
             if randomWalkersCount in intervalSavePic:
+                """
                 print("Saved picture")
+                """
                 usedInterval.append(randomWalkersCount) #append to the used count
                 label=str(randomWalkersCount)
                 plt.matshow(matrix, interpolation='nearest',cmap=cmap)#plt.cm.Blues) #ocean, Paired
@@ -271,7 +287,7 @@ def DLAcluster(squareSize, needGif, blockNumber, layerStep, tempProb, seedNum, a
                 plt.close()
        
         # Prevent infinite simulation loop
-        if randomWalkersCount == 10000000:
+        if randomWalkersCount == 20000000:
             print("CAUTION: had to break the cycle, taking too many iterations")
             completeCluster = True
 
@@ -286,23 +302,63 @@ def DLAcluster(squareSize, needGif, blockNumber, layerStep, tempProb, seedNum, a
             print("Finished, surface reached edge or encloses the cluster entirely ")
             completeSurface = True
 
-    # Calculate radius of matrix for fractal dimensionality (For 1 seed particle only)
-    clusterRadius = 0 
+    # Constant radius
+    clusterRadius = (squareSize/2 - 5)
 
+    # Not constant radius
+    """
+    
+    clusterRadii = []
     for i in range(0, squareSize - 1):
         for j in range (0, squareSize - 1):
             # Update until found furthest distance from seed particle
             if matrix[i][j] == 1:
-                if (i**2 + (j - squareSize/2)**2)**1/2 > clusterRadius:
-                    clusterRadius = (i**2 + (j-squareSize/2)**2)**(1/2)
-   
+                clusterRadii.append((i**2 + (j - squareSize/2)**2)**(1/2))
+    
+    clusterRadius = max(clusterRadii)
+    """
+
+    # Calculate cluster area (max(x)-min(x))*(max(y)-min(y))
+    minxList = []
+    for i in range(squareSize):
+        for j in range(squareSize):
+            if matrix[i][j] == 1:
+                minxList.append(j)
+                break
+    minx = min(minxList)
+
+    minyList = []
+    for i in range(squareSize):
+        for j in range(squareSize):
+            if matrix[j][i] == 1:
+                minyList.append(j)
+                break
+    miny = min(minyList)
+
+    maxxList = []
+    for i in range(squareSize):
+        for j in range(squareSize - 1, -1, -1):
+            if matrix[i][j] == 1:
+                maxxList.append(j)
+                break
+    maxx = max(maxxList)
+
+    maxyList = []
+    for i in range(squareSize):
+        for j in range(squareSize - 1, -1, -1):
+            if matrix[j][i] == 1:
+                maxyList.append(j)
+                break
+    maxy = max(maxyList)
+
+    clusterArea = (maxx-minx)*(maxy-miny)
+    
+        
     # Generate final image of cluster and GIF of simulation
     plt.matshow(matrix, interpolation='nearest',cmap=cmap)
     plt.axis('off')
     plt.savefig("images/cluster.png", dpi=200)
     plt.close()
-
-    print(usedInterval)
 
     if needGif:
         with imageio.get_writer('images/movie.gif', mode='I') as writer:
@@ -315,5 +371,5 @@ def DLAcluster(squareSize, needGif, blockNumber, layerStep, tempProb, seedNum, a
             writer.append_data(image)
 
     # Return walkers in cluster / cluster radius / final simulation matrix
-    return (addedCount, clusterRadius, matrix, islands)
+    return (addedCount, clusterRadius, clusterArea, matrix, islands)
 

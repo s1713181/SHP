@@ -15,6 +15,8 @@ squareSize: dimensions of simulation area (int)
 existingLayers: Number of layers in simulation (int)
 diffProb: Probability of diffusion during ballistic deposition (float)
 tempProb: Probability of surface normal deposition in layering (float)
+depMod: Modulating factor in surface-normal deposition (float)
+clusterMod: Modulating factor in on-cluster deposition (float)
 
 OUTPUTS:
 
@@ -35,7 +37,7 @@ import random
 import numpy as np
 
 # Add solid silica layer to simulation (ballistic deposition or surface normal deposition) 
-def addLayer(KPZMatrix, matrix, blockNumber, squareSize, existingLayers, tempProb):
+def addLayer(KPZMatrix, matrix, blockNumber, squareSize, existingLayers, tempProb, depMod, clusterMod):
 
     
     # If layers exist, remove additional area added for clustering
@@ -171,6 +173,10 @@ def addLayer(KPZMatrix, matrix, blockNumber, squareSize, existingLayers, tempPro
 
         # Surface Normal Deposition (with PBCs)
         elif tempProb >= marker:
+            # List for parallel update of layer deposition
+            addList = []
+            # List for parallel update of cluster deposition
+            clusterList = []
             for i in range(1, squareSize - 1):
                 for j in range(0, squareSize):
                     if existingLayers%2 == 0:
@@ -178,84 +184,87 @@ def addLayer(KPZMatrix, matrix, blockNumber, squareSize, existingLayers, tempPro
                             # Stochastic cellular automaton
                             if KPZMatrix[(i + 1)%squareSize][j] == 0:
                                 marker = random.uniform(0, 1)
-                                if marker < 0.9717:
-                                    KPZMatrix[(i + 1)%squareSize][j] = 4
+                                if marker < 0.9717/depMod:
+                                    addList.append([(i + 1)%squareSize,j])
 
                             if KPZMatrix[(i - 1)%squareSize][j] == 0:
                                 marker = random.uniform(0, 1)
-                                if marker < 0.9717: 
-                                    KPZMatrix[(i - 1)%squareSize][j] = 4
+                                if marker < 0.9717/depMod: 
+                                    addList.append([(i - 1)%squareSize,j]) 
 
                             if KPZMatrix[i][(j + 1)%squareSize] == 0:
                                 marker = random.uniform(0, 1)
-                                if marker < 0.9717:
-                                    KPZMatrix[i][(j + 1)%squareSize] = 4
+                                if marker < 0.9717/depMod:
+                                    addList.append([i,(j + 1)%squareSize])
 
                             if KPZMatrix[i][(j  - 1)%squareSize] == 0:
                                 marker = random.uniform(0, 1)
-                                if marker < 0.9717:
-                                    KPZMatrix[i][(j - 1)%squareSize] = 4
+                                if marker < 0.9717/depMod:
+                                    addList.append([i,(j - 1)%squareSize])
 
                             if KPZMatrix[(i + 1)%squareSize][(j + 1)%squareSize] == 0:
                                 marker = random.uniform(0, 1)
-                                if marker < 0.54544:
-                                    KPZMatrix[(i + 1)%squareSize][(j + 1)%squareSize] = 4
+                                if marker < 0.54544/depMod:
+                                    addList.append([(i + 1)%squareSize,(j + 1)%squareSize])
 
                             if KPZMatrix[(i - 1)%squareSize][(j + 1)%squareSize] == 0:
                                 marker = random.uniform(0, 1)
-                                if marker < 0.54544:
-                                    KPZMatrix[(i - 1)%squareSize][(j + 1)%squareSize] = 4
+                                if marker < 0.54544/depMod:
+                                    addList.append([(i - 1)%squareSize,(j + 1)%squareSize])
 
                             if KPZMatrix[(i + 1)%squareSize][(j - 1)%squareSize] == 0:
                                 marker = random.uniform(0, 1)
-                                if marker < 0.54544:
-                                    KPZMatrix[(i + 1)%squareSize][(j - 1)%squareSize] = 4
+                                if marker < 0.54544/depMod:
+                                    addList.append([(i + 1)%squareSize,(j - 1)%squareSize])
 
                             if KPZMatrix[(i - 1)%squareSize][(j - 1)%squareSize] == 0:
                                 marker = random.uniform(0, 1)
-                                if marker < 0.54544:
-                                    KPZMatrix[(i - 1)%squareSize][(j - 1)%squareSize] = 4
+                                if marker < 0.54544/depMod:
+                                    addList.append([(i - 1)%squareSize,(j - 1)%squareSize])
+
+                        
                         
                         elif (matrix[i][j] == 1) and (3 in nearestNeighbours(i, j, KPZMatrix, squareSize) or 6 in nearestNeighbours(i, j, KPZMatrix, squareSize)):
                             if KPZMatrix[(i + 1)%squareSize][j] == 0:
                                 marker = random.uniform(0, 1)
-                                if marker < 0.9717:
-                                    KPZMatrix[(i + 1)%squareSize][j] = 6
+                                if marker < 0.9717/clusterMod:
+                                    clusterList.append([(i + 1)%squareSize,j])
 
                             if KPZMatrix[(i - 1)%squareSize][j] == 0:
                                 marker = random.uniform(0, 1)
-                                if marker < 0.9717: 
-                                    KPZMatrix[(i - 1)%squareSize][j] = 6
+                                if marker < 0.9717/clusterMod: 
+                                    clusterList.append([(i - 1)%squareSize,j])
 
                             if KPZMatrix[i][(j + 1)%squareSize] == 0:
                                 marker = random.uniform(0, 1)
-                                if marker < 0.9717:
-                                    KPZMatrix[i][(j + 1)%squareSize] = 6
+                                if marker < 0.9717/clusterMod:
+                                    clusterList.append([i,(j + 1)%squareSize])
 
                             if KPZMatrix[i][(j  - 1)%squareSize] == 0:
                                 marker = random.uniform(0, 1)
-                                if marker < 0.9717:
-                                    KPZMatrix[i][(j - 1)%squareSize] = 6
+                                if marker < 0.9717/clusterMod:
+                                    clusterList.append([i,(j - 1)%squareSize])
 
                             if KPZMatrix[(i + 1)%squareSize][(j + 1)%squareSize] == 0:
                                 marker = random.uniform(0, 1)
-                                if marker < 0.54544:
-                                    KPZMatrix[(i + 1)%squareSize][(j + 1)%squareSize] = 6
+                                if marker < 0.54544/clusterMod:
+                                    clusterList.append([(i + 1)%squareSize,(j + 1)%squareSize])
 
                             if KPZMatrix[(i - 1)%squareSize][(j + 1)%squareSize] == 0:
                                 marker = random.uniform(0, 1)
-                                if marker < 0.54544:
-                                    KPZMatrix[(i - 1)%squareSize][(j + 1)%squareSize] = 6
+                                if marker < 0.54544/clusterMod:
+                                    clusterList.append([(i - 1)%squareSize,(j + 1)%squareSize])
 
                             if KPZMatrix[(i + 1)%squareSize][(j - 1)%squareSize] == 0:
                                 marker = random.uniform(0, 1)
-                                if marker < 0.54544:
-                                    KPZMatrix[(i + 1)%squareSize][(j - 1)%squareSize] = 6
+                                if marker < 0.54544/clusterMod:
+                                    clusterList.append([(i + 1)%squareSize,(j - 1)%squareSize])
 
                             if KPZMatrix[(i - 1)%squareSize][(j - 1)%squareSize] == 0:
                                 marker = random.uniform(0, 1)
-                                if marker < 0.54544:
-                                    KPZMatrix[(i - 1)%squareSize][(j - 1)%squareSize] = 6
+                                if marker < 0.54544/clusterMod:
+                                    clusterList.append([(i - 1)%squareSize,(j - 1)%squareSize])
+                    
                         
                                     
                     elif existingLayers%2 != 0:
@@ -263,92 +272,99 @@ def addLayer(KPZMatrix, matrix, blockNumber, squareSize, existingLayers, tempPro
                             # Stochastic cellular automaton
                             if KPZMatrix[(i + 1)%squareSize][j] == 0:
                                 marker = random.uniform(0, 1)
-                                if marker < 0.9717:
-                                    KPZMatrix[(i + 1)%squareSize][j] = 4
+                                if marker < 0.9717/depMod:
+                                    addList.append([(i + 1)%squareSize,j])
 
                             if KPZMatrix[(i - 1)%squareSize][j] == 0:
                                 marker = random.uniform(0, 1)
-                                if marker < 0.9717: 
-                                    KPZMatrix[(i - 1)%squareSize][j] = 4
+                                if marker < 0.9717/depMod: 
+                                    addList.append([(i - 1)%squareSize,j])
 
                             if KPZMatrix[i][(j + 1)%squareSize] == 0:
                                 marker = random.uniform(0, 1)
-                                if marker < 0.9717:
-                                    KPZMatrix[i][(j + 1)%squareSize] = 4
+                                if marker < 0.9717/depMod:
+                                    addList.append([i,(j + 1)%squareSize])
 
                             if KPZMatrix[i][(j  - 1)%squareSize] == 0:
                                 marker = random.uniform(0, 1)
-                                if marker < 0.9717: 
-                                    KPZMatrix[i][(j - 1)%squareSize] = 4
+                                if marker < 0.9717/depMod: 
+                                    addList.append([i,(j - 1)%squareSize])
 
                             if KPZMatrix[(i + 1)%squareSize][(j + 1)%squareSize] == 0:
                                 marker = random.uniform(0, 1)
-                                if marker < 0.54544:
-                                    KPZMatrix[(i + 1)%squareSize][(j + 1)%squareSize] = 4
+                                if marker < 0.54544/depMod:
+                                    addList.append([(i + 1)%squareSize,(j + 1)%squareSize])
 
                             if KPZMatrix[(i - 1)%squareSize][(j + 1)%squareSize] == 0:
                                 marker = random.uniform(0, 1)
-                                if marker < 0.54544:
-                                    KPZMatrix[(i - 1)%squareSize][(j + 1)%squareSize] = 4
+                                if marker < 0.54544/depMod:
+                                    addList.append([(i - 1)%squareSize,(j + 1)%squareSize])
 
                             if KPZMatrix[(i + 1)%squareSize][(j - 1)%squareSize] == 0:
                                 marker = random.uniform(0, 1)
-                                if marker < 0.54544:
-                                    KPZMatrix[(i + 1)%squareSize][(j - 1)%squareSize] = 4
+                                if marker < 0.54544/depMod:
+                                    addList.append([(i + 1)%squareSize,(j - 1)%squareSize])
 
                             if KPZMatrix[(i - 1)%squareSize][(j - 1)%squareSize] == 0:
                                 marker = random.uniform(0, 1)
-                                if marker < 0.54544:
-                                    KPZMatrix[(i - 1)%squareSize][(j - 1)%squareSize] = 4
+                                if marker < 0.54544/depMod:
+                                    addList.append([(i - 1)%squareSize,(j - 1)%squareSize])
 
+                        
                     
+                        
                         elif (matrix[i][j] == 1) and (2 in nearestNeighbours(i, j, KPZMatrix, squareSize) or 6 in nearestNeighbours(i, j, KPZMatrix, squareSize)):
                             if KPZMatrix[(i + 1)%squareSize][j] == 0:
                                 marker = random.uniform(0, 1)
-                                if marker < 0.9717:
-                                    KPZMatrix[(i + 1)%squareSize][j] = 6
+                                if marker < 0.9717/clusterMod:
+                                    clusterList.append([(i + 1)%squareSize,j])
 
                             if KPZMatrix[(i - 1)%squareSize][j] == 0:
                                 marker = random.uniform(0, 1)
-                                if marker < 0.9717: 
-                                    KPZMatrix[(i - 1)%squareSize][j] = 6
+                                if marker < 0.9717/clusterMod: 
+                                    clusterList.append([(i - 1)%squareSize,j])
 
                             if KPZMatrix[i][(j + 1)%squareSize] == 0:
                                 marker = random.uniform(0, 1)
-                                if marker < 0.9717:
-                                    KPZMatrix[i][(j + 1)%squareSize] = 6
+                                if marker < 0.9717/clusterMod:
+                                    clusterList.append([i,(j + 1)%squareSize])
 
                             if KPZMatrix[i][(j  - 1)%squareSize] == 0:
                                 marker = random.uniform(0, 1)
-                                if marker < 0.9717:
-                                    KPZMatrix[i][(j - 1)%squareSize] = 6
+                                if marker < 0.9717/clusterMod:
+                                    clusterList.append([i,(j - 1)%squareSize])
 
                             if KPZMatrix[(i + 1)%squareSize][(j + 1)%squareSize] == 0:
                                 marker = random.uniform(0, 1)
-                                if marker < 0.54544:
-                                    KPZMatrix[(i + 1)%squareSize][(j + 1)%squareSize] = 6
+                                if marker < 0.54544/clusterMod:
+                                    clusterList.append([(i + 1)%squareSize,(j + 1)%squareSize])
 
                             if KPZMatrix[(i - 1)%squareSize][(j + 1)%squareSize] == 0:
                                 marker = random.uniform(0, 1)
-                                if marker < 0.54544:
-                                    KPZMatrix[(i - 1)%squareSize][(j + 1)%squareSize] = 6
+                                if marker < 0.54544/clusterMod:
+                                    clusterList.append([(i - 1)%squareSize,(j + 1)%squareSize])
 
                             if KPZMatrix[(i + 1)%squareSize][(j - 1)%squareSize] == 0:
                                 marker = random.uniform(0, 1)
-                                if marker < 0.54544:
-                                    KPZMatrix[(i + 1)%squareSize][(j - 1)%squareSize] = 6
+                                if marker < 0.54544/clusterMod:
+                                    clusterList.append([(i + 1)%squareSize,(j - 1)%squareSize])
 
                             if KPZMatrix[(i - 1)%squareSize][(j - 1)%squareSize] == 0:
                                 marker = random.uniform(0, 1)
-                                if marker < 0.54544:
-                                    KPZMatrix[(i - 1)%squareSize][(j - 1)%squareSize] = 6
-                        
+                                if marker < 0.54544/clusterMod:
+                                    clusterList.append([(i - 1)%squareSize,(j - 1)%squareSize])
+
+            # Parallel update
+            for i in addList:
+                KPZMatrix[i[0]][i[1]] = 4
+            for i in clusterList:
+                KPZMatrix[i[0]][i[1]] = 6
                                                       
                                 
-
     # Add to layer variable     
     existingLayers += 1
 
+    
     # Fill in gaps in KPZ layer   
     for i in range(squareSize):
         for j in range(squareSize - 1, -1, -1):
@@ -375,7 +391,9 @@ def addLayer(KPZMatrix, matrix, blockNumber, squareSize, existingLayers, tempPro
             except NameError:
                 pass
 
+    
 
+    
     # Additional area for clustering
     for i in range(squareSize):
         for j in range(squareSize - 1, -1, -1):
@@ -395,11 +413,13 @@ def addLayer(KPZMatrix, matrix, blockNumber, squareSize, existingLayers, tempPro
                     break
                 else:
                     pass
-            
+
+    
 
 
     return (KPZMatrix, existingLayers)
 
+# Obtain nearest neighbours (Moore neighbourhood)
 def nearestNeighbours(i, j, KPZMatrix, squareSize):
     nearestNeighbours = []
 

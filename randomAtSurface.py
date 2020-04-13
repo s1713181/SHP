@@ -33,7 +33,7 @@ def randomAtSurface(squareSize):
         y = random.randint(5, squareSize - 6)       
         location = [x, y] 
 
-    else:
+    elif marker > float (4/6) and marker < float(5/6):
         # Release at right of simulation area
         x = squareSize - 6
         y = random.randint(5, squareSize - 6)       
